@@ -4,6 +4,7 @@ MainActor.assumeIsolated {
     #if DEBUG
     if DebugSnapshot.runIfRequested() { exit(0) }
     #endif
+    Migration.run()
     let app = NSApplication.shared
     let delegate = AppDelegate()
     app.delegate = delegate

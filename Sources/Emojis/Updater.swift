@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+import Security
 
 /// Actualitzacions automàtiques des de les Releases de GitHub.
 ///
@@ -180,6 +181,7 @@ final class Updater {
                 throw UpdateError(errorDescription: Tr.updateInvalid.text)
             }
             try run("/usr/bin/codesign", ["--verify", "--deep", "--strict", newApp.path])
+            try checkSameSigner(newApp)
 
             _ = try FileManager.default.replaceItemAt(installed, withItemAt: newApp)
             try? FileManager.default.removeItem(at: work)
@@ -196,6 +198,28 @@ final class Updater {
             if alert.runModal() == .alertFirstButtonReturn {
                 NSWorkspace.shared.open(release.page)
             }
+        }
+    }
+
+    /// La versió nova ha d'estar signada amb el mateix certificat que aquesta.
+    /// Les versions fins a la 1.2 es signaven "ad hoc" (sense certificat) i no es poden comparar.
+    private func checkSameSigner(_ newApp: URL) throws {
+        var current: SecStaticCode?
+        var requirement: SecRequirement?
+        var text: CFString?
+        guard SecStaticCodeCreateWithPath(Bundle.main.bundleURL as CFURL, [], &current) == errSecSuccess,
+              let current,
+              SecCodeCopyDesignatedRequirement(current, [], &requirement) == errSecSuccess,
+              let requirement,
+              SecRequirementCopyString(requirement, [], &text) == errSecSuccess,
+              (text as String?)?.contains("certificate") == true else { return }
+
+        var candidate: SecStaticCode?
+        let flags = SecCSFlags(rawValue: kSecCSCheckAllArchitectures | kSecCSStrictValidate | kSecCSCheckNestedCode)
+        guard SecStaticCodeCreateWithPath(newApp as CFURL, [], &candidate) == errSecSuccess,
+              let candidate,
+              SecStaticCodeCheckValidity(candidate, flags, requirement) == errSecSuccess else {
+            throw UpdateError(errorDescription: Tr.updateInvalid.text)
         }
     }
 

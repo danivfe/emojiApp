@@ -51,7 +51,7 @@ Emojis uses your Mac's language if it's Catalan, Spanish or English, and English
 
 Once a day, Emojis checks for a new version on [GitHub Releases](https://github.com/danivfe/emojiApp/releases). When there is one, it asks whether to install it, then downloads it, replaces itself and reopens. You can also check manually from the menu bar icon or in **Settings › General**.
 
-After an update, macOS may forget the Accessibility permission. If pasting stops working, turn it on again: remove Emojis from the Accessibility list and add it back.
+Every version is signed with the same certificate, so macOS keeps the Accessibility permission after an update. The only exception is updating from 1.2 or earlier: then you have to turn it on once more. Remove Emojis from the Accessibility list with **−**, reopen it, and turn it on when asked.
 
 ## Development
 
@@ -62,6 +62,17 @@ Build the app, copy it to `~/Applications` and open it:
 ```
 
 `./scripts/build_app.sh --dmg` builds the installer, `build/Emojis.dmg`.
+
+### Code signing
+
+Releases are signed with the project's own certificate (not Apple's), so that macOS recognises every version as the same app. To set it up once:
+
+1. Run `./scripts/setup_signing.sh`. It creates the certificate in `~/.config/emojis-signing`, outside the repository. **Back up that folder**: with a different certificate, everyone would have to turn on the Accessibility permission again.
+2. On GitHub, go to **Settings › Secrets and variables › Actions** and add two repository secrets, pasting the contents of these files:
+   - `SIGNING_P12_BASE64`: `github-secret-SIGNING_P12_BASE64.txt`
+   - `SIGNING_PASSWORD`: `github-secret-SIGNING_PASSWORD.txt`
+
+`build_app.sh` uses the certificate if it finds it, and the release workflow refuses to publish without it. The updater only installs versions signed with the same certificate.
 
 ### Publishing a release
 

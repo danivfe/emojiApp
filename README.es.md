@@ -51,7 +51,7 @@ Emojis usa el idioma del Mac si es catalán, castellano o inglés, y el inglés 
 
 Una vez al día, Emojis comprueba si hay una versión nueva en las [Releases de GitHub](https://github.com/danivfe/emojiApp/releases). Si la hay, pregunta si quieres instalarla, la descarga, se sustituye y se vuelve a abrir. También puedes comprobarlo a mano desde el icono de la barra de menús o en **Ajustes › General**.
 
-Después de una actualización, el Mac puede olvidar el permiso de Accesibilidad. Si deja de pegar, vuelve a activarlo: quita Emojis de la lista de Accesibilidad y vuelve a añadirla.
+Todas las versiones están firmadas con el mismo certificado, así que el Mac mantiene el permiso de Accesibilidad después de actualizar. La única excepción es cuando se actualiza desde la 1.2 o una anterior: entonces hay que volver a activarlo una vez más. Quita Emojis de la lista de Accesibilidad con **−**, vuelve a abrirla y actívala cuando te lo pida.
 
 ## Desarrollo
 
@@ -62,6 +62,17 @@ Compila la app, la copia a `~/Applications` y la abre:
 ```
 
 `./scripts/build_app.sh --dmg` crea el instalador, `build/Emojis.dmg`.
+
+### Firma
+
+Las versiones se firman con un certificado propio del proyecto (no el de Apple), para que el Mac reconozca todas las versiones como la misma app. Para configurarlo, una sola vez:
+
+1. Ejecuta `./scripts/setup_signing.sh`. Crea el certificado en `~/.config/emojis-signing`, fuera del repositorio. **Haz copia de seguridad de esa carpeta**: con un certificado distinto, todo el mundo tendría que volver a activar el permiso de Accesibilidad.
+2. En GitHub, ve a **Settings › Secrets and variables › Actions** y añade dos secretos del repositorio, pegando el contenido de estos archivos:
+   - `SIGNING_P12_BASE64`: `github-secret-SIGNING_P12_BASE64.txt`
+   - `SIGNING_PASSWORD`: `github-secret-SIGNING_PASSWORD.txt`
+
+`build_app.sh` usa el certificado si lo encuentra, y GitHub Actions no publica ninguna versión sin él. El actualizador solo instala versiones firmadas con el mismo certificado.
 
 ### Publicar una versión
 

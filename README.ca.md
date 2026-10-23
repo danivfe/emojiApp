@@ -51,7 +51,7 @@ Emojis fa servir l'idioma del Mac si és català, castellà o anglès, i l'angl�
 
 Un cop al dia, Emojis comprova si hi ha una versió nova a les [Releases de GitHub](https://github.com/danivfe/emojiApp/releases). Si n'hi ha, pregunta si la vols instal·lar, la descarrega, se substitueix i es torna a obrir. També ho pots comprovar a mà des de la icona de la barra de menús o a **Configuració › General**.
 
-Després d'una actualització, el Mac pot oblidar el permís d'Accessibilitat. Si deixa d'enganxar, torna'l a activar: treu Emojis de la llista d'Accessibilitat i torna-la a afegir.
+Totes les versions estan signades amb el mateix certificat, així que el Mac manté el permís d'Accessibilitat després d'actualitzar. L'única excepció és quan s'actualitza des de la 1.2 o una d'anterior: llavors s'ha de tornar a activar un cop més. Treu Emojis de la llista d'Accessibilitat amb **−**, torna-la a obrir i activa-la quan t'ho demani.
 
 ## Desenvolupament
 
@@ -62,6 +62,17 @@ Compila l'app, la copia a `~/Applications` i l'obre:
 ```
 
 `./scripts/build_app.sh --dmg` crea l'instal·lador, `build/Emojis.dmg`.
+
+### Signatura
+
+Les versions es signen amb un certificat propi del projecte (no el d'Apple), perquè el Mac reconegui totes les versions com la mateixa app. Per configurar-ho, un sol cop:
+
+1. Executa `./scripts/setup_signing.sh`. Crea el certificat a `~/.config/emojis-signing`, fora del repositori. **Fes còpia de seguretat d'aquesta carpeta**: amb un certificat diferent, tothom hauria de tornar a activar el permís d'Accessibilitat.
+2. A GitHub, ves a **Settings › Secrets and variables › Actions** i afegeix dos secrets del repositori, enganxant-hi el contingut d'aquests fitxers:
+   - `SIGNING_P12_BASE64`: `github-secret-SIGNING_P12_BASE64.txt`
+   - `SIGNING_PASSWORD`: `github-secret-SIGNING_PASSWORD.txt`
+
+`build_app.sh` fa servir el certificat si el troba, i GitHub Actions no publica cap versió sense ell. L'actualitzador només instal·la versions signades amb el mateix certificat.
 
 ### Publicar una versió
 

@@ -24,6 +24,29 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" Support/Info.plist
           /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${{ github.run_number }}" Support/Info.plist
 
+      # El certificat de signatura ve dels secrets del repositori (scripts/setup_signing.sh).
+      # Sempre el mateix, perquè el Mac no oblidi el permís d'Accessibilitat en actualitzar.
+      - name: Prepara el certificat de signatura
+        env:
+          SIGNING_P12_BASE64: ${{ secrets.SIGNING_P12_BASE64 }}
+          SIGNING_PASSWORD: ${{ secrets.SIGNING_PASSWORD }}
+        run: |
+          if [ -z "$SIGNING_P12_BASE64" ] || [ -z "$SIGNING_PASSWORD" ]; then
+            echo "Falten els secrets SIGNING_P12_BASE64 i SIGNING_PASSWORD"; exit 1
+          fi
+          DIR="$RUNNER_TEMP/signing"
+          mkdir -p "$DIR"
+          printf '%s' "$SIGNING_PASSWORD" > "$DIR/password"
+          echo "$SIGNING_P12_BASE64" | base64 --decode > "$DIR/emojis-signing.p12"
+          security create-keychain -p "$SIGNING_PASSWORD" "$DIR/emojis.keychain-db"
+          security set-keychain-settings "$DIR/emojis.keychain-db"
+          security import "$DIR/emojis-signing.p12" -k "$DIR/emojis.keychain-db" \
+            -P "$SIGNING_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$SIGNING_PASSWORD" "$DIR/emojis.keychain-db"
+          rm "$DIR/emojis-signing.p12"
+          echo "EMOJIS_SIGNING_DIR=$DIR" >> "$GITHUB_ENV"
+          echo "EMOJIS_REQUIRE_SIGNING=1" >> "$GITHUB_ENV"
+
       - name: Compila l'app
         run: |
           swift --version

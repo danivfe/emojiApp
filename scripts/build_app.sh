@@ -22,7 +22,19 @@ cp "$BIN" "$APP/Contents/MacOS/Emojis"
 cp Support/Info.plist "$APP/Contents/Info.plist"
 cp Support/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp Sources/Emojis/Resources/*.json "$APP/Contents/Resources/"
-codesign --force --sign - "$APP"
+# Signa amb el certificat propi (scripts/setup_signing.sh) perquè el Mac reconegui totes
+# les versions com la mateixa app i no oblidi el permís d'Accessibilitat.
+# Sense certificat, signatura "ad hoc": funciona, però cada versió és una app nova per al Mac.
+SIGN_DIR="${EMOJIS_SIGNING_DIR:-$HOME/.config/emojis-signing}"
+if [ -f "$SIGN_DIR/emojis.keychain-db" ]; then
+    security unlock-keychain -p "$(cat "$SIGN_DIR/password")" "$SIGN_DIR/emojis.keychain-db"
+    codesign --force --sign "Emojis Self-Signed" --keychain "$SIGN_DIR/emojis.keychain-db" "$APP"
+elif [ -n "${EMOJIS_REQUIRE_SIGNING:-}" ]; then
+    echo "Error: no hi ha el certificat de signatura a $SIGN_DIR"; exit 1
+else
+    echo "Avís: sense certificat a $SIGN_DIR; es signa ad hoc (vegeu scripts/setup_signing.sh)"
+    codesign --force --sign - "$APP"
+fi
 echo "Fet: $APP"
 
 if [ "${1:-}" = "--install" ]; then
