@@ -43,4 +43,14 @@ Cada vegada que es recompila l'app, macOS pot oblidar aquest permís. Si deixa d
 
 Compila l'app, la copia a `~/Applications/Emojis.app` i l'obre.
 
+## Enviar-la a algú
+
+```bash
+./scripts/build_app.sh --dmg
+```
+
+Crea `build/Emojis.dmg`, que funciona en Macs amb xip Apple i amb Intel (macOS 14 o més nou). Quan s'obre, apareix la típica finestra per arrossegar Emojis a Aplicacions.
+
+L'app no està signada per Apple. Per això, la primera vegada que l'obri, l'altra persona haurà d'anar a **Configuració del Sistema › Privacitat i seguretat** i prémer **«Obre igualment»**. Aquestes instruccions també surten al fons de la finestra del `.dmg`.
+
 La llista d'emojis (`Sources/Emojis/Resources/emojis.json`) es genera amb `scripts/generate_emojis.py` a partir de les dades d'Unicode (`emoji-test.txt`) i dels noms en català del CLDR.
