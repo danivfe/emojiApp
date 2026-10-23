@@ -44,6 +44,13 @@ jobs:
             -P "$SIGNING_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple: -s -k "$SIGNING_PASSWORD" "$DIR/emojis.keychain-db"
           rm "$DIR/emojis-signing.p12"
+          # Al Mac de GitHub el clauer ha d'estar a la llista de cerca perquè codesign trobi la clau
+          security list-keychains -d user -s "$DIR/emojis.keychain-db" $(security list-keychains -d user | tr -d '"')
+          if ! security find-identity -p codesigning "$DIR/emojis.keychain-db" | grep -q '"Emojis Self-Signed"'; then
+            echo "::error::El certificat no s'ha importat bé. Revisa els secrets SIGNING_P12_BASE64 i SIGNING_PASSWORD."
+            security find-identity -p codesigning "$DIR/emojis.keychain-db"
+            exit 1
+          fi
           echo "EMOJIS_SIGNING_DIR=$DIR" >> "$GITHUB_ENV"
           echo "EMOJIS_REQUIRE_SIGNING=1" >> "$GITHUB_ENV"
 

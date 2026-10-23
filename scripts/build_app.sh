@@ -28,9 +28,18 @@ cp Sources/Emojis/Resources/*.json "$APP/Contents/Resources/"
 SIGN_DIR="${EMOJIS_SIGNING_DIR:-$HOME/.config/emojis-signing}"
 if [ -f "$SIGN_DIR/emojis.keychain-db" ]; then
     security unlock-keychain -p "$(cat "$SIGN_DIR/password")" "$SIGN_DIR/emojis.keychain-db"
-    codesign --force --sign "Emojis Self-Signed" --keychain "$SIGN_DIR/emojis.keychain-db" "$APP"
+    # Per l'empremta i no pel nom: el certificat és propi (no de confiança) i
+    # algunes versions de macOS no el troben pel nom
+    IDENTITY="$(security find-identity -p codesigning "$SIGN_DIR/emojis.keychain-db" \
+        | awk '/"Emojis Self-Signed"/ { print $2; exit }')"
+    if [ -z "$IDENTITY" ]; then
+        echo "::error::No s'ha trobat el certificat «Emojis Self-Signed» a $SIGN_DIR/emojis.keychain-db"
+        security find-identity -p codesigning "$SIGN_DIR/emojis.keychain-db"
+        exit 1
+    fi
+    codesign --force --sign "$IDENTITY" --keychain "$SIGN_DIR/emojis.keychain-db" "$APP"
 elif [ -n "${EMOJIS_REQUIRE_SIGNING:-}" ]; then
-    echo "Error: no hi ha el certificat de signatura a $SIGN_DIR"; exit 1
+    echo "::error::No hi ha el certificat de signatura a $SIGN_DIR"; exit 1
 else
     echo "Avís: sense certificat a $SIGN_DIR; es signa ad hoc (vegeu scripts/setup_signing.sh)"
     codesign --force --sign - "$APP"
