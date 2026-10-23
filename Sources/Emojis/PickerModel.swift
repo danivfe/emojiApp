@@ -30,7 +30,7 @@ enum Output {
 final class PickerModel {
     static let compactColumns = 9
 
-    let catalog: Catalog
+    private(set) var catalog: Catalog
     let store: Store
 
     var query = "" {
@@ -65,6 +65,12 @@ final class PickerModel {
 
     var tone: SkinTone { store.tone }
 
+    /// Quan canvia l'idioma: noms nous dels emojis i títols de les seccions.
+    func setCatalog(_ catalog: Catalog) {
+        self.catalog = catalog
+        rebuild()
+    }
+
     var selected: PickerItem? {
         guard rows.indices.contains(selRow), rows[selRow].items.indices.contains(selCol) else { return nil }
         return rows[selRow].items[selCol]
@@ -92,27 +98,27 @@ final class PickerModel {
         let q = normalize(query.trimmingCharacters(in: .whitespaces))
         if q.isEmpty {
             let favorites = resolve(store.prefs.favorites)
-            if !favorites.isEmpty { result.append(compact("fav", "Preferits", "⭐️", favorites)) }
+            if !favorites.isEmpty { result.append(compact("fav", Tr.favorites.text, "⭐️", favorites)) }
             let recents = resolve(store.prefs.recents)
-            if !recents.isEmpty { result.append(compact("rec", "Recents", "🕘", recents)) }
-            result.append(PickerSection(id: "combo", title: "Combinacions", icon: "✨", columns: 2, items: combos))
-            if !images.isEmpty { result.append(compact("mine", "Els meus", "🖼️", images)) }
-            for g in catalog.groups { result.append(compact("g:" + g.name, g.name, g.icon, g.items)) }
-            result.append(compact("chars", "Caràcters", "§", catalog.characters))
-            result.append(PickerSection(id: "kao", title: "Kaomojis", icon: "ツ", columns: 3, items: catalog.kaomoji))
+            if !recents.isEmpty { result.append(compact("rec", Tr.recents.text, "🕘", recents)) }
+            result.append(PickerSection(id: "combo", title: Tr.combos.text, icon: "✨", columns: 2, items: combos))
+            if !images.isEmpty { result.append(compact("mine", Tr.mine.text, "🖼️", images)) }
+            for g in catalog.groups { result.append(compact("g:" + g.key, Tr.group(g.key), g.icon, g.items)) }
+            result.append(compact("chars", Tr.characters.text, "§", catalog.characters))
+            result.append(PickerSection(id: "kao", title: Tr.kaomoji.text, icon: "ツ", columns: 3, items: catalog.kaomoji))
         } else {
             let words = q.split(separator: " ").map(String.init)
             let extra = store.keywordsByEmoji
             let found = search(catalog.groups.flatMap(\.items) + catalog.characters, q, words, extra)
-            if !found.isEmpty { result.append(compact("res", "Resultats", "🔎", Array(found.prefix(180)))) }
+            if !found.isEmpty { result.append(compact("res", Tr.results.text, "🔎", Array(found.prefix(180)))) }
             let mine = search(images, q, words, extra)
-            if !mine.isEmpty { result.append(compact("mine", "Els meus", "🖼️", mine)) }
+            if !mine.isEmpty { result.append(compact("mine", Tr.mine.text, "🖼️", mine)) }
             let combosFound = search(combos, q, words, extra)
             if !combosFound.isEmpty {
-                result.append(PickerSection(id: "combo", title: "Combinacions", icon: "✨", columns: 2, items: combosFound))
+                result.append(PickerSection(id: "combo", title: Tr.combos.text, icon: "✨", columns: 2, items: combosFound))
             }
             let kao = search(catalog.kaomoji, q, words, extra)
-            if !kao.isEmpty { result.append(PickerSection(id: "kao", title: "Kaomojis", icon: "ツ", columns: 3, items: kao)) }
+            if !kao.isEmpty { result.append(PickerSection(id: "kao", title: Tr.kaomoji.text, icon: "ツ", columns: 3, items: kao)) }
         }
 
         sections = result

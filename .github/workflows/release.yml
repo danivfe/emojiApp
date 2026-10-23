@@ -1,0 +1,45 @@
+# Quan es puja una etiqueta vX.Y (p. ex. amb scripts/release.sh 1.2 "Novetats"),
+# un Mac de GitHub compila l'app i publica la release amb:
+#   Emojis.zip          el que descarrega l'actualitzador automàtic de l'app
+#   Emojis-ca/es/en.dmg  per a qui la instal·la per primer cop
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Posa la versió de l'etiqueta a Info.plist
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          /usr/libexec/PlistBuddy -c "Set CFBundleShortVersionString $VERSION" Support/Info.plist
+          /usr/libexec/PlistBuddy -c "Set CFBundleVersion ${{ github.run_number }}" Support/Info.plist
+
+      - name: Compila l'app
+        run: |
+          swift --version
+          ./scripts/build_app.sh
+          ditto -c -k --keepParent build/Emojis.app build/Emojis.zip
+
+      - name: Crea els .dmg
+        run: |
+          for lang in ca es en; do ./scripts/build_app.sh --dmg "$lang"; done
+
+      - name: Publica la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Les novetats són el missatge de l'etiqueta
+          git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+          git for-each-ref "refs/tags/$GITHUB_REF_NAME" --format='%(contents)' > notes.txt
+          gh release create "$GITHUB_REF_NAME" \
+            build/Emojis.zip build/Emojis-ca.dmg build/Emojis-es.dmg build/Emojis-en.dmg \
+            --title "Emojis ${GITHUB_REF_NAME#v}" --notes-file notes.txt

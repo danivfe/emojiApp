@@ -5,13 +5,14 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = Store()
     private let settingsState = SettingsState()
+    private let updater = Updater()
     private var statusItem: NSStatusItem!
     private var picker: PickerPanelController!
     private var hotKey: HotKey!
     private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let model = PickerModel(catalog: Catalog.load(), store: store)
+        let model = PickerModel(catalog: Catalog.load(language: store.language), store: store)
         picker = PickerPanelController(model: model)
         model.onChoose = { [weak self] output, copyOnly in
             guard let self else { return }
@@ -38,6 +39,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
             hotKey.register(HotKeyPreset.find(store.prefs.hotKey))
         }
+        store.onLanguageChange = { [weak self] in
+            guard let self else { return }
+            picker.model.setCatalog(Catalog.load(language: store.language))
+            settingsWindow?.title = Tr.settingsTitle.text
+        }
+
+        updater.start()
 
         // La primera vegada, demana el permís per poder enganxar sol.
         if !Inserter.hasAccessibility, !UserDefaults.standard.bool(forKey: "askedAccessibility") {
@@ -59,13 +67,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func makeMenu() -> NSMenu {
         let menu = NSMenu()
-        let open = NSMenuItem(title: "Obre el selector (\(HotKeyPreset.find(store.prefs.hotKey).label))",
+        let open = NSMenuItem(title: Tr.openPicker.format(HotKeyPreset.find(store.prefs.hotKey).label),
                               action: #selector(openPicker), keyEquivalent: "")
         menu.addItem(open)
-        menu.addItem(NSMenuItem(title: "Configuració…", action: #selector(openSettingsFromMenu), keyEquivalent: ","))
-        menu.addItem(NSMenuItem(title: "Obre la carpeta d'imatges", action: #selector(openImagesFolder), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: Tr.settingsMenu.text, action: #selector(openSettingsFromMenu), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: Tr.openImagesFolder.text, action: #selector(openImagesFolder), keyEquivalent: ""))
+        menu.addItem(NSMenuItem(title: Tr.checkForUpdatesMenu.text, action: #selector(checkForUpdates), keyEquivalent: ""))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Surt d'Emojis", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        menu.addItem(NSMenuItem(title: Tr.quit.text, action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         for item in menu.items where item.action != #selector(NSApplication.terminate(_:)) { item.target = self }
         return menu
     }
@@ -73,14 +82,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func openPicker() { picker.show(below: statusItem.button) }
     @objc private func openSettingsFromMenu() { openSettings(tab: .general, keywordEmoji: nil) }
     @objc private func openImagesFolder() { NSWorkspace.shared.open(CustomImages.folder) }
+    @objc private func checkForUpdates() { Task { await updater.check(userInitiated: true) } }
 
     private func openSettings(tab: SettingsTab, keywordEmoji: String?) {
         settingsState.tab = tab
         settingsState.keywordEmoji = keywordEmoji
         if settingsWindow == nil {
             let window = NSWindow(contentViewController: NSHostingController(
-                rootView: SettingsView(store: store, state: settingsState)))
-            window.title = "Configuració d'Emojis"
+                rootView: SettingsView(store: store, state: settingsState, updater: updater)))
+            window.title = Tr.settingsTitle.text
             window.styleMask = [.titled, .closable, .miniaturizable]
             window.isReleasedWhenClosed = false
             window.center()

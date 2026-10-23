@@ -15,65 +15,89 @@ final class SettingsState {
 struct SettingsView: View {
     @Bindable var store: Store
     @Bindable var state: SettingsState
+    let updater: Updater
 
     var body: some View {
         TabView(selection: $state.tab) {
-            GeneralTab(store: store)
-                .tabItem { Label("General", systemImage: "gearshape") }
+            GeneralTab(store: store, updater: updater)
+                .tabItem { Label(Tr.general.text, systemImage: "gearshape") }
                 .tag(SettingsTab.general)
             CombosTab(store: store)
-                .tabItem { Label("Combinacions", systemImage: "sparkles") }
+                .tabItem { Label(Tr.combos.text, systemImage: "sparkles") }
                 .tag(SettingsTab.combos)
             KeywordsTab(store: store, state: state)
-                .tabItem { Label("Paraules clau", systemImage: "text.magnifyingglass") }
+                .tabItem { Label(Tr.keywords.text, systemImage: "text.magnifyingglass") }
                 .tag(SettingsTab.keywords)
             ImagesTab()
-                .tabItem { Label("Els meus emojis", systemImage: "photo") }
+                .tabItem { Label(Tr.myEmojis.text, systemImage: "photo") }
                 .tag(SettingsTab.images)
         }
         .padding(20)
-        .frame(width: 560, height: 440)
+        .frame(width: 560, height: 540)
     }
 }
 
 private struct GeneralTab: View {
     @Bindable var store: Store
+    let updater: Updater
+    @State private var autoUpdate = true
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var trusted = Inserter.hasAccessibility
     private let timer = Timer.publish(every: 1.5, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Form {
-            Picker("Drecera per obrir el selector", selection: $store.prefs.hotKey) {
+            Picker(Tr.language.text, selection: $store.prefs.language) {
+                Text(Tr.languageAutomatic.text).tag(String?.none)
+                Divider()
+                ForEach(AppLanguage.allCases) { Text($0.nativeName).tag(Optional($0.rawValue)) }
+            }
+            Picker(Tr.shortcut.text, selection: $store.prefs.hotKey) {
                 ForEach(HotKeyPreset.all) { Text($0.label).tag($0.id) }
             }
-            Picker("To de pell", selection: Binding(get: { store.tone }, set: { store.tone = $0 })) {
+            Picker(Tr.skinTone.text, selection: Binding(get: { store.tone }, set: { store.tone = $0 })) {
                 ForEach(SkinTone.allCases) { Text("\($0.sample)  \($0.label)").tag($0) }
             }
-            Toggle("Obre Emojis en iniciar la sessió", isOn: $launchAtLogin)
+            Toggle(Tr.launchAtLogin.text, isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { _, enabled in
                     try? enabled ? SMAppService.mainApp.register() : SMAppService.mainApp.unregister()
                     launchAtLogin = SMAppService.mainApp.status == .enabled
                 }
 
-            Section("Enganxar automàticament") {
+            Section(Tr.autoPaste.text) {
                 if trusted {
-                    Label("Permís d'Accessibilitat activat", systemImage: "checkmark.circle.fill")
+                    Label(Tr.accessibilityOn.text, systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                 } else {
-                    Label("Sense el permís d'Accessibilitat, l'emoji només es copia (l'has d'enganxar amb ⌘V).",
-                          systemImage: "exclamationmark.triangle.fill")
+                    Label(Tr.accessibilityOff.text, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
-                    Button("Obre Configuració del Sistema › Accessibilitat") { Inserter.openAccessibilitySettings() }
+                    Button(Tr.openAccessibility.text) { Inserter.openAccessibilitySettings() }
                 }
             }
 
-            Section("Historial") {
-                Button("Esborra els recents") { store.prefs.recents = [] }
+            Section(Tr.updates.text) {
+                Toggle(Tr.autoUpdate.text, isOn: $autoUpdate)
+                    .onChange(of: autoUpdate) { _, on in updater.automatic = on }
+                HStack {
+                    Text(Tr.versionLabel.format(Updater.currentVersion)).foregroundStyle(.secondary)
+                    Spacer()
+                    switch updater.status {
+                    case .checking: Text(Tr.checking.text).foregroundStyle(.secondary)
+                    case .downloading: Text(Tr.downloading.text).foregroundStyle(.secondary)
+                    default: EmptyView()
+                    }
+                    Button(Tr.checkNow.text) { Task { await updater.check(userInitiated: true) } }
+                        .disabled(updater.status == .checking || updater.status == .downloading)
+                }
+            }
+
+            Section(Tr.history.text) {
+                Button(Tr.clearRecents.text) { store.prefs.recents = [] }
                     .disabled(store.prefs.recents.isEmpty)
             }
         }
         .formStyle(.grouped)
+        .onAppear { autoUpdate = updater.automatic }
         .onReceive(timer) { _ in trusted = Inserter.hasAccessibility }
     }
 }
@@ -83,13 +107,13 @@ private struct CombosTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Grups d'emojis o frases que s'enganxen d'un sol cop. Surten a la secció ✨ i es poden cercar pel nom.")
+            Text(Tr.combosHelp.text)
                 .foregroundStyle(.secondary)
             List {
                 ForEach($store.prefs.combos) { $combo in
                     HStack {
-                        TextField("Nom", text: $combo.name).frame(width: 150)
-                        TextField("Emojis o text", text: $combo.text)
+                        TextField(Tr.name.text, text: $combo.name).frame(width: 150)
+                        TextField(Tr.emojisOrText.text, text: $combo.text)
                         Button(role: .destructive) {
                             store.prefs.combos.removeAll { $0.id == combo.id }
                         } label: { Image(systemName: "trash") }
@@ -98,8 +122,8 @@ private struct CombosTab: View {
                 }
                 .onMove { store.prefs.combos.move(fromOffsets: $0, toOffset: $1) }
             }
-            Button("Afegeix una combinació", systemImage: "plus") {
-                store.prefs.combos.append(Combo(name: "Nova", text: ""))
+            Button(Tr.addCombo.text, systemImage: "plus") {
+                store.prefs.combos.append(Combo(name: Tr.newCombo.text, text: ""))
             }
         }
     }
@@ -113,12 +137,12 @@ private struct KeywordsTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Paraules teves per trobar un emoji més de pressa. Si escrius la paraula al cercador, aquest emoji surt el primer.")
+            Text(Tr.keywordsHelp.text)
                 .foregroundStyle(.secondary)
             HStack {
-                TextField("Paraula (p. ex. visca)", text: $newWord)
-                TextField("Emoji", text: $newEmoji).frame(width: 80)
-                Button("Afegeix") {
+                TextField(Tr.wordExample.text, text: $newWord)
+                TextField(Tr.emoji.text, text: $newEmoji).frame(width: 80)
+                Button(Tr.add.text) {
                     store.prefs.keywords.insert(
                         CustomKeyword(word: newWord.trimmingCharacters(in: .whitespaces),
                                       emoji: newEmoji.trimmingCharacters(in: .whitespaces)), at: 0)
@@ -131,8 +155,8 @@ private struct KeywordsTab: View {
             List {
                 ForEach($store.prefs.keywords) { $keyword in
                     HStack {
-                        TextField("Paraula", text: $keyword.word)
-                        TextField("Emoji", text: $keyword.emoji).frame(width: 80)
+                        TextField(Tr.word.text, text: $keyword.word)
+                        TextField(Tr.emoji.text, text: $keyword.emoji).frame(width: 80)
                         Button(role: .destructive) {
                             store.prefs.keywords.removeAll { $0.id == keyword.id }
                         } label: { Image(systemName: "trash") }
@@ -158,22 +182,22 @@ private struct ImagesTab: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Imatges teves (PNG, JPG, GIF…) que pots enganxar com si fossin emojis a Missatges, WhatsApp, Mail, etc. Es cerquen pel nom del fitxer.")
+            Text(Tr.imagesHelp.text)
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Afegeix imatges…", systemImage: "plus") {
+                Button(Tr.addImages.text, systemImage: "plus") {
                     CustomImages.importWithPanel()
                     images = CustomImages.scan()
                 }
-                Button("Obre la carpeta", systemImage: "folder") {
+                Button(Tr.openFolder.text, systemImage: "folder") {
                     NSWorkspace.shared.open(CustomImages.folder)
                 }
                 Spacer()
-                Button("Actualitza", systemImage: "arrow.clockwise") { images = CustomImages.scan() }
+                Button(Tr.refresh.text, systemImage: "arrow.clockwise") { images = CustomImages.scan() }
             }
             if images.isEmpty {
-                ContentUnavailableView("Encara no n'hi ha cap", systemImage: "photo.on.rectangle",
-                                       description: Text("Afegeix-hi imatges per veure-les a la secció 🖼️ del selector."))
+                ContentUnavailableView(Tr.noImages.text, systemImage: "photo.on.rectangle",
+                                       description: Text(Tr.noImagesHelp.text))
             } else {
                 List(images) { item in
                     HStack {
@@ -187,7 +211,7 @@ private struct ImagesTab: View {
                             images = CustomImages.scan()
                         } label: { Image(systemName: "trash") }
                             .buttonStyle(.borderless)
-                            .help("Mou a la paperera")
+                            .help(Tr.moveToTrash.text)
                     }
                 }
             }

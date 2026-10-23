@@ -1,9 +1,23 @@
 // Dibuixa el fons de la finestra del .dmg: una fletxa de l'app cap a Aplicacions.
-// Ús: swift make_dmg_background.swift sortida.png
+// Ús: swift make_dmg_background.swift sortida.tiff [ca|es|en]
 import AppKit
 
 let width = 600, height = 400
 let out = URL(fileURLWithPath: CommandLine.arguments[1])
+let lang = CommandLine.arguments.count > 2 ? CommandLine.arguments[2] : "ca"
+
+let texts: [String: (title: String, line1: String, line2: String)] = [
+    "ca": ("Arrossega Emojis a la carpeta Aplicacions",
+           "La primera vegada: Configuració del Sistema › Privacitat i seguretat › «Obre igualment».",
+           "Després activa Emojis a Privacitat i seguretat › Accessibilitat per enganxar sol."),
+    "es": ("Arrastra Emojis a la carpeta Aplicaciones",
+           "La primera vez: Ajustes del Sistema › Privacidad y seguridad › «Abrir igualmente».",
+           "Después activa Emojis en Privacidad y seguridad › Accesibilidad para pegar solo."),
+    "en": ("Drag Emojis to the Applications folder",
+           "First time: System Settings › Privacy & Security › “Open Anyway”.",
+           "Then enable Emojis in Privacy & Security › Accessibility to paste automatically."),
+]
+let t = texts[lang] ?? texts["en"]!
 
 func render(scale: Int) -> NSBitmapImageRep {
     let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width * scale, pixelsHigh: height * scale,
@@ -26,7 +40,7 @@ func render(scale: Int) -> NSBitmapImageRep {
         ]).draw(in: NSRect(x: 0, y: y, width: CGFloat(width), height: size * 1.5))
     }
     // Coordenades amb l'origen a baix: les icones del Finder queden a y = 190 (des de dalt)
-    text("Arrossega Emojis a la carpeta Aplicacions", size: 20, weight: .semibold,
+    text(t.title, size: 20, weight: .semibold,
          color: NSColor(white: 0.2, alpha: 1), y: 318)
 
     let arrow = NSBezierPath()
@@ -45,9 +59,9 @@ func render(scale: Int) -> NSBitmapImageRep {
     arrow.stroke()
     head.stroke()
 
-    text("La primera vegada: Configuració del Sistema › Privacitat i seguretat › «Obre igualment».",
+    text(t.line1,
          size: 12, weight: .regular, color: NSColor(white: 0.35, alpha: 1), y: 52)
-    text("Després activa Emojis a Privacitat i seguretat › Accessibilitat per enganxar sol.",
+    text(t.line2,
          size: 12, weight: .regular, color: NSColor(white: 0.35, alpha: 1), y: 32)
 
     NSGraphicsContext.restoreGraphicsState()

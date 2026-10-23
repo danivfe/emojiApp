@@ -1,7 +1,8 @@
 #!/bin/bash
 # Compila Emojis.app a build/ (universal: Apple i Intel).
 #   --install  la copia a ~/Applications i l'obre
-#   --dmg      crea build/Emojis.dmg per enviar-la (finestra «arrossega a Aplicacions»)
+#   --dmg [ca|es|en]  crea build/Emojis-<idioma>.dmg per enviar-la (finestra «arrossega a Aplicacions»)
+#                     en aquell idioma; per defecte, català
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -21,7 +22,7 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/Emojis"
 cp Support/Info.plist "$APP/Contents/Info.plist"
 cp Support/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
-cp Sources/Emojis/Resources/emojis.json "$APP/Contents/Resources/emojis.json"
+cp Sources/Emojis/Resources/*.json "$APP/Contents/Resources/"
 codesign --force --sign - "$APP"
 echo "Fet: $APP"
 
@@ -35,15 +36,23 @@ if [ "${1:-}" = "--install" ]; then
 fi
 
 if [ "${1:-}" = "--dmg" ]; then
-    if [ ! -f Support/dmg-background.tiff ]; then
-        swift scripts/make_dmg_background.swift Support/dmg-background.tiff
+    LANG_DMG="${2:-ca}"
+    case "$LANG_DMG" in
+        ca) APPS_NAME="Aplicacions" ;;
+        es) APPS_NAME="Aplicaciones" ;;
+        en) APPS_NAME="Applications" ;;
+        *) echo "Idioma desconegut: $LANG_DMG (ca, es o en)"; exit 1 ;;
+    esac
+    BACKGROUND="Support/dmg-background-$LANG_DMG.tiff"
+    if [ ! -f "$BACKGROUND" ]; then
+        swift scripts/make_dmg_background.swift "$BACKGROUND" "$LANG_DMG"
     fi
     WORK="$(mktemp -d)"
     STAGE="$WORK/Emojis"
     mkdir -p "$STAGE/.background"
     cp -R "$APP" "$STAGE/"
-    ln -s /Applications "$STAGE/Aplicacions"
-    cp Support/dmg-background.tiff "$STAGE/.background/background.tiff"
+    ln -s /Applications "$STAGE/$APPS_NAME"
+    cp "$BACKGROUND" "$STAGE/.background/background.tiff"
 
     # Primer un disc d'escriptura per poder col·locar les icones amb el Finder
     hdiutil create -quiet -srcfolder "$STAGE" -volname Emojis -fs HFS+ -format UDRW "$WORK/rw.dmg"
@@ -51,8 +60,9 @@ if [ "${1:-}" = "--dmg" ]; then
     mkdir -p "$MOUNT"
     hdiutil attach -quiet -nobrowse -noautoopen -mountpoint "$MOUNT" "$WORK/rw.dmg"
 
-    # El Finder fa servir el nom del volum; si n'hi ha un altre d'igual, falla
-    if ! osascript <<EOF
+    # El Finder fa servir el nom del volum; si n'hi ha un altre d'igual, falla.
+    # Als Macs de GitHub el Finder pot no respondre: com a molt l'esperem 2 minuts.
+    osascript <<EOF &
 tell application "Finder"
     set theDisk to disk (POSIX file "$MOUNT" as alias)
     open theDisk
@@ -67,20 +77,26 @@ tell application "Finder"
     set text size of opts to 13
     set background picture of opts to file ".background:background.tiff" of theDisk
     set position of item "Emojis.app" of theDisk to {150, 190}
-    set position of item "Aplicacions" of theDisk to {450, 190}
+    set position of item "$APPS_NAME" of theDisk to {450, 190}
     update theDisk without registering applications
     delay 1
     close win
 end tell
 EOF
-    then
+    OSA=$!
+    ( sleep 120; kill "$OSA" 2>/dev/null ) >/dev/null 2>&1 &
+    WATCHDOG=$!
+    if ! wait "$OSA"; then
         echo "Avís: no s'ha pogut col·locar la finestra amb el Finder; el .dmg funciona igualment."
     fi
+    pkill -P "$WATCHDOG" 2>/dev/null || true
+    kill "$WATCHDOG" 2>/dev/null || true
     sync
     hdiutil detach -quiet "$MOUNT"
 
-    rm -f build/Emojis.dmg
-    hdiutil convert -quiet "$WORK/rw.dmg" -format UDZO -imagekey zlib-level=9 -o build/Emojis.dmg
+    DMG="build/Emojis-$LANG_DMG.dmg"
+    rm -f "$DMG"
+    hdiutil convert -quiet "$WORK/rw.dmg" -format UDZO -imagekey zlib-level=9 -o "$DMG"
     rm -rf "$WORK"
-    echo "Fet: build/Emojis.dmg"
+    echo "Fet: $DMG"
 fi

@@ -29,7 +29,7 @@ struct PickerView: View {
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-            TextField("Cerca un emoji…", text: $model.query)
+            TextField(Tr.searchPlaceholder.text, text: $model.query)
                 .textFieldStyle(.plain)
                 .font(.title3)
                 .focused($searchFocused)
@@ -47,14 +47,14 @@ struct PickerView: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .fixedSize()
-            .help("To de pell")
+            .help(Tr.skinTone.text)
             Button {
                 model.onSettings?(.general, nil)
             } label: {
                 Image(systemName: "gearshape").foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
-            .help("Configuració (⌘,)")
+            .help(Tr.settingsHelp.text)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -106,7 +106,7 @@ struct PickerView: View {
             }
             .overlay {
                 if model.sections.isEmpty {
-                    Text("Cap resultat per «\(model.query)»").foregroundStyle(.secondary)
+                    Text(Tr.noResults.format(model.query)).foregroundStyle(.secondary)
                 }
             }
             .onChange(of: model.scrollRequest) { _, request in
@@ -135,10 +135,10 @@ struct PickerView: View {
 
     @ViewBuilder
     private func contextMenu(for item: PickerItem) -> some View {
-        Button("Enganxa") { model.choose(item) }
-        Button("Només copia") { model.choose(item, copyOnly: true) }
+        Button(Tr.paste.text) { model.choose(item) }
+        Button(Tr.copyOnly.text) { model.choose(item, copyOnly: true) }
         if let tones = item.tones {
-            Menu("Enganxa amb un altre to") {
+            Menu(Tr.pasteOtherTone.text) {
                 Button(item.text) { model.choose(item, variant: item.text) }
                 ForEach(tones, id: \.self) { variant in
                     Button(variant) { model.choose(item, variant: variant) }
@@ -147,12 +147,12 @@ struct PickerView: View {
         }
         if item.isCompact {
             Divider()
-            Button(model.store.isFavorite(item.id) ? "Treu de preferits" : "Afegeix a preferits") {
+            Button(model.store.isFavorite(item.id) ? Tr.removeFavorite.text : Tr.addFavorite.text) {
                 model.toggleFavorite(item)
             }
         }
         if item.kind == .emoji || item.kind == .character {
-            Button("Afegeix una paraula clau…") { model.onSettings?(.keywords, item.text) }
+            Button(Tr.addKeyword.text) { model.onSettings?(.keywords, item.text) }
         }
     }
 
@@ -180,7 +180,7 @@ struct PickerView: View {
                             Image(systemName: "star.fill").font(.caption2).foregroundStyle(.yellow)
                         }
                     }
-                    Text("↩ enganxa   ⌘↩ copia   ⌘D preferit   ⇥ secció")
+                    Text(Tr.footerHint.text)
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

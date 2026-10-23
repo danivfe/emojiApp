@@ -5,7 +5,12 @@ import UniformTypeIdentifiers
 enum CustomImages {
     static var folder: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        let url = base.appendingPathComponent("Emojis/Els meus", isDirectory: true)
+        let url = base.appendingPathComponent("Emojis/Images", isDirectory: true)
+        // La primera versió feia servir un nom en català; el canviem a un de neutre
+        let old = base.appendingPathComponent("Emojis/Els meus", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: url.path), FileManager.default.fileExists(atPath: old.path) {
+            try? FileManager.default.moveItem(at: old, to: url)
+        }
         try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         return url
     }
@@ -30,7 +35,7 @@ enum CustomImages {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.image]
         panel.allowsMultipleSelection = true
-        panel.message = "Tria les imatges que vols fer servir com a emojis"
+        panel.message = Tr.chooseImages.text
         guard panel.runModal() == .OK else { return 0 }
         var added = 0
         for url in panel.urls {

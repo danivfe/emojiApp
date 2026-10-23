@@ -9,7 +9,11 @@ enum DebugSnapshot {
     static func runIfRequested() -> Bool {
         let args = CommandLine.arguments
         guard let i = args.firstIndex(of: "--snapshot"), args.count > i + 1 else { return false }
-        let model = PickerModel(catalog: Catalog.load(), store: Store())
+        let store = Store()
+        if let l = args.firstIndex(of: "--lang"), args.count > l + 1 {
+            LanguageState.shared.current = AppLanguage(rawValue: args[l + 1]) ?? .ca
+        }
+        let model = PickerModel(catalog: Catalog.load(language: LanguageState.shared.current), store: store)
         model.prepare()
         if args.count > i + 2 { model.query = args[i + 2] }
         print("Seccions:", model.sections.map { "\($0.title) (\($0.items.count))" }.joined(separator: ", "))

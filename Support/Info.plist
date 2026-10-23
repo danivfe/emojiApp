@@ -20,6 +20,12 @@
 	<string>1</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>ca</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ca</string>
+		<string>es</string>
+		<string>en</string>
+	</array>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>LSUIElement</key>
