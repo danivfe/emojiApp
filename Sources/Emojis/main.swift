@@ -1,0 +1,12 @@
+import AppKit
+
+MainActor.assumeIsolated {
+    #if DEBUG
+    if DebugSnapshot.runIfRequested() { exit(0) }
+    #endif
+    let app = NSApplication.shared
+    let delegate = AppDelegate()
+    app.delegate = delegate
+    app.setActivationPolicy(.accessory)
+    app.run()
+}
