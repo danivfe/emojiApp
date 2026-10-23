@@ -1,8 +1,7 @@
 #!/bin/bash
 # Compila Emojis.app a build/ (universal: Apple i Intel).
 #   --install  la copia a ~/Applications i l'obre
-#   --dmg [ca|es|en]  crea build/Emojis-<idioma>.dmg per enviar-la (finestra «arrossega a Aplicacions»)
-#                     en aquell idioma; per defecte, català
+#   --dmg      crea l'instal·lador build/Emojis.dmg (finestra «arrossega a Aplicacions», en anglès)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -36,16 +35,11 @@ if [ "${1:-}" = "--install" ]; then
 fi
 
 if [ "${1:-}" = "--dmg" ]; then
-    LANG_DMG="${2:-ca}"
-    case "$LANG_DMG" in
-        ca) APPS_NAME="Aplicacions" ;;
-        es) APPS_NAME="Aplicaciones" ;;
-        en) APPS_NAME="Applications" ;;
-        *) echo "Idioma desconegut: $LANG_DMG (ca, es o en)"; exit 1 ;;
-    esac
-    BACKGROUND="Support/dmg-background-$LANG_DMG.tiff"
+    # Un sol instal·lador per a tothom, en anglès
+    APPS_NAME="Applications"
+    BACKGROUND="Support/dmg-background.tiff"
     if [ ! -f "$BACKGROUND" ]; then
-        swift scripts/make_dmg_background.swift "$BACKGROUND" "$LANG_DMG"
+        swift scripts/make_dmg_background.swift "$BACKGROUND"
     fi
     WORK="$(mktemp -d)"
     STAGE="$WORK/Emojis"
@@ -94,7 +88,7 @@ EOF
     sync
     hdiutil detach -quiet "$MOUNT"
 
-    DMG="build/Emojis-$LANG_DMG.dmg"
+    DMG="build/Emojis.dmg"
     rm -f "$DMG"
     hdiutil convert -quiet "$WORK/rw.dmg" -format UDZO -imagekey zlib-level=9 -o "$DMG"
     rm -rf "$WORK"

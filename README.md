@@ -1,79 +1,82 @@
 # Emojis 😀
 
-Selector d'emojis per al Mac, en català, castellà i anglès.
+**English** · [Català](README.ca.md) · [Español](README.es.md)
 
-## Com es fa servir
+A fast emoji picker for the Mac, in Catalan, Spanish and English.
 
-- **⌃⌥E** (Control + Opció + E) obre el selector des de qualsevol app. La drecera es pot canviar a la configuració.
-- També s'obre clicant la icona 🙂 de la barra de menús. Amb el clic dret hi ha el menú amb la configuració i l'opció de sortir.
-- Escriu per cercar, per exemple «cor», «riure», «cafe» o «gat». El nom anglès dels emojis també es pot fer servir.
+## Installation
 
-| Tecla | Què fa |
+Requires macOS 14 (Sonoma) or later. Works on Apple silicon and Intel Macs.
+
+1. Download `Emojis.dmg` from the [latest release](https://github.com/danivfe/emojiApp/releases/latest).
+2. Open the `.dmg` and drag **Emojis** into the **Applications** folder.
+3. Open Emojis. The app isn't signed by Apple, so the first time macOS will block it:
+   - Go to **System Settings › Privacy & Security**, scroll down and click **Open Anyway**.
+4. To let Emojis paste for you, turn it on in **System Settings › Privacy & Security › Accessibility**. Without this permission the emoji is only copied, and you paste it yourself with ⌘V.
+
+A 🙂 icon appears in the menu bar. To open Emojis automatically when you log in, use **Settings › General**.
+
+## Usage
+
+- Press **⌃⌥E** (Control + Option + E) in any app to open the picker. You can change the shortcut in Settings.
+- Or click the 🙂 icon in the menu bar. Right-click it for Settings, updates and Quit.
+- Type to search, for example “heart”, “laugh”, “coffee” or “cat”. English names always work, whatever language the app is in.
+
+| Key | Action |
 |---|---|
-| ↩ | Enganxa l'emoji a l'app on escrivies |
-| ⌘↩ | Només el copia |
-| ← → ↑ ↓ | Mou la selecció |
-| ⇥ / ⇧⇥ | Salta a la secció següent / anterior |
-| ⌘D | Afegeix o treu de preferits |
-| ⌘, | Configuració |
-| Esc | Esborra la cerca o tanca |
+| ↩ | Paste the emoji into the app you were typing in |
+| ⌘↩ | Copy only |
+| ← → ↑ ↓ | Move the selection |
+| ⇥ / ⇧⇥ | Jump to the next / previous section |
+| ⌘D | Add to or remove from favorites |
+| ⌘, | Settings |
+| Esc | Clear the search, or close |
 
-Amb el clic dret sobre un emoji pots triar un altre to de pell o afegir-li una paraula clau teva.
+Right-click an emoji to paste it with another skin tone or to add your own keyword for it.
 
-## Què inclou
+## Features
 
-- Preferits i recents.
-- Combinacions: grups d'emojis o frases que s'enganxen d'un sol cop, com «Bon dia ☀️☕».
-- Paraules clau pròpies: per exemple, que «visca» doni 🎉.
-- Caràcters útils (l·l, «», €, →, ½…) i kaomojis ¯\\\_(ツ)\_/¯.
-- To de pell preferit.
-- Els meus emojis: imatges pròpies de `~/Library/Application Support/Emojis/Images` que s'enganxen com a imatge.
+- Favorites and recent emoji.
+- Combos: groups of emoji or phrases pasted in one go, like “Good morning ☀️☕”.
+- Your own keywords: for example, make “yay” find 🎉 first.
+- Handy characters (€, →, ½, «», l·l…) and kaomoji ¯\\\_(ツ)\_/¯.
+- Preferred skin tone.
+- My emoji: your own images, pasted as pictures into Messages, WhatsApp, Mail and other apps. Add them in **Settings › My emoji**.
 
-## Idiomes
+## Languages
 
-L'app fa servir l'idioma del sistema, si és català, castellà o anglès. Si no, fa servir l'anglès. Es pot canviar a **Configuració › General › Idioma**.
+Emojis uses your Mac's language if it's Catalan, Spanish or English, and English otherwise. You can change it in **Settings › General › Language**.
 
-Per afegir un idioma nou:
-1. Afegeix-lo a `AppLanguage` i als textos de `Localization.swift`.
-2. Afegeix-ne els noms a `Extras` (`Catalog.swift`).
-3. Genera'n el fitxer `names-<codi>.json` amb `scripts/generate_emojis.py`.
+## Updates
 
-## Permís d'Accessibilitat
+Once a day, Emojis checks for a new version on [GitHub Releases](https://github.com/danivfe/emojiApp/releases). When there is one, it asks whether to install it, then downloads it, replaces itself and reopens. You can also check manually from the menu bar icon or in **Settings › General**.
 
-Per enganxar l'emoji automàticament, l'app necessita el permís a **Configuració del Sistema › Privacitat i seguretat › Accessibilitat**. Sense aquest permís, l'emoji només es copia i l'has d'enganxar tu amb ⌘V.
+After an update, macOS may forget the Accessibility permission. If pasting stops working, turn it on again: remove Emojis from the Accessibility list and add it back.
 
-Cada vegada que es recompila l'app, macOS pot oblidar aquest permís. Si deixa d'enganxar, treu Emojis de la llista i torna-la a afegir.
+## Development
 
-## Compilar
+Build the app, copy it to `~/Applications` and open it:
 
 ```bash
 ./scripts/build_app.sh --install
 ```
 
-Compila l'app, la copia a `~/Applications/Emojis.app` i l'obre.
+`./scripts/build_app.sh --dmg` builds the installer, `build/Emojis.dmg`.
 
-Les dades dels emojis (`Sources/Emojis/Resources/`) es generen amb `scripts/generate_emojis.py` a partir de les dades d'Unicode (`emoji-test.txt`) i dels noms de cada idioma del CLDR.
-
-## Actualitzacions automàtiques
-
-Cada dia, l'app comprova si hi ha una versió nova a les [Releases de GitHub](https://github.com/danivfe/emojiApp/releases). Si n'hi ha, pregunta si la vols instal·lar, la descarrega, substitueix l'app i la torna a obrir. També es pot comprovar a mà des del menú de la barra de menús o a **Configuració › General**.
-
-Per publicar una versió nova:
+### Publishing a release
 
 ```bash
-./scripts/release.sh 1.2 "Què hi ha de nou"
+./scripts/release.sh 1.2 "What's new"
 ```
 
-L'script crea l'etiqueta `v1.2` amb les novetats i la puja a GitHub. Allà, un Mac de GitHub (GitHub Actions, `.github/workflows/release.yml`) compila l'app i els `.dmg` i publica la release. Tarda uns minuts i no cal instal·lar res. El número de versió de l'app surt de l'etiqueta.
+This creates the `v1.2` tag with the release notes and pushes it to GitHub. GitHub Actions (`.github/workflows/release.yml`) then builds the app and the installer and publishes the release, which takes a few minutes. The app's version number comes from the tag. Installed apps pick up the new version on their next daily check.
 
-Després d'una actualització, macOS pot oblidar el permís d'Accessibilitat. Cal tornar-lo a activar.
+### Emoji data
 
-## Enviar-la a algú
+The files in `Sources/Emojis/Resources/` are generated by `scripts/generate_emojis.py` from Unicode's `emoji-test.txt` and the CLDR annotations for each language. The script's header lists the download URLs.
 
-```bash
-./scripts/build_app.sh --dmg es
-```
+### Adding a language
 
-Crea `build/Emojis-es.dmg`, que funciona en Macs amb xip Apple i amb Intel (macOS 14 o més nou). L'idioma (`ca`, `es` o `en`) només canvia els textos de la finestra del `.dmg`: l'app és la mateixa en tots tres. Quan s'obre, apareix la típica finestra per arrossegar Emojis a Aplicacions.
-
-L'app no està signada per Apple. Per això, la primera vegada que l'obri, l'altra persona haurà d'anar a **Configuració del Sistema › Privacitat i seguretat** i prémer **«Obre igualment»**. Aquestes instruccions també surten al fons de la finestra del `.dmg`.
+1. Add a case to `AppLanguage` and a translation for each string in `Localization.swift`.
+2. Add the names to `Extras` in `Catalog.swift`.
+3. Generate `names-<code>.json` with `scripts/generate_emojis.py`.
