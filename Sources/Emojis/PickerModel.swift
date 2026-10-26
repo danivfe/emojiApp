@@ -7,11 +7,17 @@ struct PickerSection: Identifiable {
     let icon: String
     let columns: Int
     let items: [PickerItem]
+    /// Les files de la graella, amb els seus elements. La vista les recorre directament
+    /// (sense índexs), perquè una fila d'una cerca anterior no apunti fora de la llista.
+    var rows: [GridRow] = []
 }
 
 struct GridRow: Identifiable {
     let id: String
+    /// Posició a `PickerModel.rows`, per a la selecció.
+    let index: Int
     let section: Int
+    let columns: Int
     let items: [PickerItem]
 }
 
@@ -121,17 +127,21 @@ final class PickerModel {
             if !kao.isEmpty { result.append(PickerSection(id: "kao", title: Tr.kaomoji.text, icon: "ツ", columns: 3, items: kao)) }
         }
 
-        sections = result
-        rows = []
+        var allRows: [GridRow] = []
         sectionRows = []
-        for (si, section) in result.enumerated() {
-            let start = rows.count
+        for si in result.indices {
+            let section = result[si]
+            let start = allRows.count
             for (ri, chunk) in stride(from: 0, to: section.items.count, by: section.columns).enumerated() {
                 let items = Array(section.items[chunk..<min(chunk + section.columns, section.items.count)])
-                rows.append(GridRow(id: "\(section.id)#\(ri)", section: si, items: items))
+                allRows.append(GridRow(id: "\(section.id)#\(ri)", index: allRows.count, section: si,
+                                       columns: section.columns, items: items))
             }
-            sectionRows.append(start..<rows.count)
+            result[si].rows = Array(allRows[start...])
+            sectionRows.append(start..<allRows.count)
         }
+        rows = allRows
+        sections = result
         clampSelection()
     }
 

@@ -88,7 +88,7 @@ struct PickerView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(model.sections.enumerated()), id: \.element.id) { si, section in
+                    ForEach(model.sections) { section in
                         Text(section.title)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
@@ -96,8 +96,8 @@ struct PickerView: View {
                             .padding(.bottom, 4)
                             .padding(.leading, 4)
                             .id("h:" + section.id)
-                        ForEach(model.sectionRows[si], id: \.self) { ri in
-                            row(ri, columns: section.columns)
+                        ForEach(section.rows) { row in
+                            rowView(row)
                         }
                     }
                 }
@@ -116,16 +116,15 @@ struct PickerView: View {
         }
     }
 
-    private func row(_ ri: Int, columns: Int) -> some View {
-        let row = model.rows[ri]
-        let width = Self.gridWidth / CGFloat(columns)
+    private func rowView(_ row: GridRow) -> some View {
+        let width = Self.gridWidth / CGFloat(row.columns)
         return HStack(spacing: 0) {
             ForEach(Array(row.items.enumerated()), id: \.element.id) { ci, item in
-                ItemCell(item: item, tone: model.tone, selected: model.isSelected(row: ri, col: ci),
+                ItemCell(item: item, tone: model.tone, selected: model.isSelected(row: row.index, col: ci),
                          image: item.imageURL.flatMap(model.thumbnail))
                     .frame(width: width, height: item.kind == .combo ? 46 : 40)
                     .contentShape(Rectangle())
-                    .onHover { if $0 { model.hover(row: ri, col: ci) } }
+                    .onHover { if $0 { model.hover(row: row.index, col: ci) } }
                     .onTapGesture { model.choose(item) }
                     .contextMenu { contextMenu(for: item) }
             }

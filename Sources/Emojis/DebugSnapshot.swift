@@ -28,6 +28,16 @@ enum DebugSnapshot {
         window.contentView = view
         view.layoutSubtreeIfNeeded()
         RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+        // --sequence "o,oj,": escriu cerques seguides sobre la mateixa vista, com en l'app real
+        if let s = args.firstIndex(of: "--sequence"), args.count > s + 1 {
+            for query in args[s + 1].split(separator: ",", omittingEmptySubsequences: false) {
+                model.query = String(query)
+                view.layoutSubtreeIfNeeded()
+                view.display()
+                RunLoop.main.run(until: Date().addingTimeInterval(0.2))
+                print("«\(query)»: \(model.rows.count) files")
+            }
+        }
         if let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) {
             view.cacheDisplay(in: view.bounds, to: rep)
             try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: args[i + 1]))
